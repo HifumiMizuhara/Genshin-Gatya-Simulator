@@ -205,13 +205,13 @@
             <button class="language-btn" data-lang="en">English</button>
             <button class="language-btn active" data-lang="ja">日本語</button>
         </div>
-        
+
         <h1 id="title">ガチャシミュレーター</h1>
-        
+
         <div class="banner" id="banner">
             ★5 キャラクターピックアップ中！
         </div>
-        
+
         <div class="stats">
             <div class="stats-item">
                 <div id="total-pulls-label">累計ガチャ回数</div>
@@ -220,6 +220,10 @@
             <div class="stats-item">
                 <div id="star5-count-label">★5 獲得数</div>
                 <div class="stats-value" id="star5-count">0</div>
+            </div>
+          <div class="stats-item">
+                <div id="last-star5-label">最後の★5からの回数</div>
+                <div class="stats-value" id="last-star5">0</div>
             </div>
             <div class="stats-item">
                 <div id="star4-count-label">★4 獲得数</div>
@@ -234,7 +238,7 @@
                 <div class="streak-value" id="no-spook-streak">0</div>
             </div>
         </div>
-        
+
         <div class="pity-progress">
             <div id="pity-progress-label">天井までの進捗状況</div>
             <div class="pity-bar">
@@ -242,18 +246,18 @@
             </div>
             <div class="pity-text" id="pity-text">0 / 90</div>
         </div>
-        
+
         <div class="controls">
             <button id="single-pull">1回引く</button>
             <button id="ten-pull">10連引く</button>
             <button id="reset" class="reset-button">リセット</button>
         </div>
-        
+
         <div class="results" id="results">
             <div class="result-item" id="results-placeholder">ガチャ結果がここに表示されます</div>
         </div>
     </div>
-    
+
     <div class="result-animation hidden" id="animation">
         <div class="animation-content" id="animation-content">
         </div>
@@ -268,6 +272,7 @@
                     banner: "★5 角色UP中！",
                     totalPullsLabel: "累计抽卡次数",
                     star5CountLabel: "★5 获得数",
+                    lastStar5Label: "距离上次★5",
                     star4CountLabel: "★4 获得数",
                     star3CountLabel: "★3 获得数",
                     noSpookStreakLabel: "未歪连续次数",
@@ -281,13 +286,15 @@
                     closeButton: "关闭",
                     pickup: "UP",
                     standard: "常驻",
-                    pullCount: "({count}连)"
+                    pullCount: "({count}连)",
+                    sinceLastStar5: "({count}连)"
                 },
                 en: {
                     title: "Gacha Simulator",
                     banner: "★5 Character Rate Up!",
                     totalPullsLabel: "Total Pulls",
                     star5CountLabel: "★5 Obtained",
+                    lastStar5Label: "Pulls Since Last ★5",
                     star4CountLabel: "★4 Obtained",
                     star3CountLabel: "★3 Obtained",
                     noSpookStreakLabel: "No Spook Streak",
@@ -301,13 +308,15 @@
                     closeButton: "Close",
                     pickup: "Rate Up",
                     standard: "Standard",
-                    pullCount: "(Pull {count})"
+                    pullCount: "(Pull {count})",
+                    sinceLastStar5: "(Pulls: {count})"
                 },
                 ja: {
                     title: "ガチャシミュレーター",
                     banner: "★5 キャラクターピックアップ中！",
                     totalPullsLabel: "累計ガチャ回数",
                     star5CountLabel: "★5 獲得数",
+                    lastStar5Label: "最後の★5からの回数",
                     star4CountLabel: "★4 獲得数",
                     star3CountLabel: "★3 獲得数",
                     noSpookStreakLabel: "すり抜けなし連続",
@@ -321,13 +330,15 @@
                     closeButton: "閉じる",
                     pickup: "ピックアップ",
                     standard: "恒常",
-                    pullCount: "({count}連目)"
+                    pullCount: "({count}連目)",
+                    sinceLastStar5: "({count}連)"
+
                 }
             };
-            
+
             // 現在の言語
             let currentLang = 'ja';
-            
+
             // ガチャのステート
             const state = {
                 totalPulls: 0,
@@ -337,9 +348,10 @@
                 star4Count: 0,
                 star3Count: 0,
                 noSpookStreak: 0, // すり抜けなしの連続回数
+                lastStar5Pulls: 0, // 最後の星5から何回引いたか
                 results: []
             };
-            
+
             // ローカルストレージから状態を読み込む
             function loadState() {
                 const savedState = localStorage.getItem('gachaState');
@@ -348,12 +360,12 @@
                     Object.assign(state, parsedState);
                 }
             }
-            
+
             // ローカルストレージに状態を保存する
             function saveState() {
                 localStorage.setItem('gachaState', JSON.stringify(state));
             }
-            
+
             // DOM要素
             const titleEl = document.getElementById('title');
             const bannerEl = document.getElementById('banner');
@@ -361,6 +373,8 @@
             const totalPullsEl = document.getElementById('total-pulls');
             const star5CountLabelEl = document.getElementById('star5-count-label');
             const star5CountEl = document.getElementById('star5-count');
+            const lastStar5LabelEl = document.getElementById('last-star5-label');
+            const lastStar5El = document.getElementById('last-star5');
             const star4CountLabelEl = document.getElementById('star4-count-label');
             const star4CountEl = document.getElementById('star4-count');
             const star3CountLabelEl = document.getElementById('star3-count-label');
@@ -378,16 +392,17 @@
             const animationEl = document.getElementById('animation');
             const animationContentEl = document.getElementById('animation-content');
             const languageBtns = document.querySelectorAll('.language-btn');
-            
+
             // 言語変更
             function changeLanguage(lang) {
                 currentLang = lang;
-                
+
                 // UIテキストの更新
                 titleEl.textContent = translations[lang].title;
                 bannerEl.textContent = translations[lang].banner;
                 totalPullsLabelEl.textContent = translations[lang].totalPullsLabel;
                 star5CountLabelEl.textContent = translations[lang].star5CountLabel;
+                lastStar5LabelEl.textContent = translations[lang].lastStar5Label;
                 star4CountLabelEl.textContent = translations[lang].star4CountLabel;
                 star3CountLabelEl.textContent = translations[lang].star3CountLabel;
                 noSpookStreakLabelEl.textContent = translations[lang].noSpookStreakLabel;
@@ -395,17 +410,17 @@
                 singlePullBtn.textContent = translations[lang].singlePull;
                 tenPullBtn.textContent = translations[lang].tenPull;
                 resetBtn.textContent = translations[lang].reset;
-                
+
                 if (state.results.length === 0) {
                     resultsPlaceholderEl.textContent = translations[lang].resultsPlaceholder;
                 }
-                
+
                 // 天井テキストの更新
                 updatePityText();
-                
+
                 // 結果一覧の更新
                 updateResultsList();
-                
+
                 // 言語ボタンのアクティブ状態更新
                 languageBtns.forEach(btn => {
                     if (btn.dataset.lang === lang) {
@@ -415,12 +430,12 @@
                     }
                 });
             }
-            
+
             // 天井テキスト更新
             function updatePityText() {
                 pityTextEl.textContent = translations[currentLang].pityText.replace('{current}', state.pityCount);
             }
-            
+
             // 確率計算
             function calculateStar5Probability() {
                 if (state.pityCount <= 73) {
@@ -432,27 +447,28 @@
                     return 0.006 + ((state.pityCount - 73) * (1.0 - 0.006) / (90 - 73));
                 }
             }
-            
+
             // 単発ガチャを実行
             function pullSingle(isPartOfTenPull = false, guaranteedStar4 = false) {
                 state.totalPulls++;
                 state.pityCount++;
-                
+                state.lastStar5Pulls++; // ★5からの回数を増やす
+
                 let rarity;
                 let isPickup = false;
-                
+
                 // 確率計算
                 const star5Prob = calculateStar5Probability();
-                
+
                 // ランダム数値の生成
                 let rand = Math.random();
-                
+
                 // ★5の抽選
                 if (rand < star5Prob) {
                     rarity = 5;
                     state.star5Count++;
                     state.pityCount = 0; // 天井リセット
-                    
+
                     // すり抜け判定
                     if (state.guaranteedPickup) {
                         isPickup = true;
@@ -467,109 +483,118 @@
                             state.noSpookStreak = 0; // すり抜けなしカウンターリセット
                         }
                     }
-                } 
+                }
                 // ★4の抽選
                 else if (guaranteedStar4 || rand < star5Prob + 0.051) {
                     rarity = 4;
                     state.star4Count++;
-                } 
+                }
                 // それ以外は★3
                 else {
                     rarity = 3;
                     state.star3Count++;
                 }
-                
-                // 結果の作成
+
+                // 結果の作成, ここでlastStar5Pullsを記録
                 const result = {
                     pull: state.totalPulls,
                     rarity: rarity,
-                    isPickup: isPickup
+                    isPickup: isPickup,
+                    sinceLastStar5: state.lastStar5Pulls  // lastStar5Pulls を記録
                 };
+
                 
+                if (rarity === 5) { //★5が出たら、リセット
+                   state.lastStar5Pulls = 0;
+                }
+
                 // 結果の保存
                 state.results.unshift(result);
-                
+
                 // UIに反映
                 updateUI();
-                
+
                 // 状態を保存
                 saveState();
-                
+
                 return result;
             }
-            
+
+
             // 10連ガチャを実行
             function pullTen() {
                 const results = [];
                 let hasStar4 = false;
-                
+
                 // 9回引く
                 for (let i = 0; i < 9; i++) {
                     const result = pullSingle(true);
                     results.push(result);
                     if (result.rarity === 4) hasStar4 = true;
                 }
-                
+
                 // 最後の1回は★4確定（まだ出てない場合）
                 const lastResult = pullSingle(true, !hasStar4);
                 results.push(lastResult);
-                
+
                 // アニメーション表示
                 showAnimation(results);
-                
+
                 return results;
             }
-            
+
             // アニメーション表示
             function showAnimation(results) {
                 // 言語に基づいたテキスト
                 const t = translations[currentLang];
-                
+
                 // アニメーションの内容を生成
                 let html = `<h2>${t.animationTitle}</h2>`;
-                
+
                 // ★5があれば最初に表示
                 const star5Results = results.filter(r => r.rarity === 5);
                 if (star5Results.length > 0) {
                     html += '<div style="margin: 20px 0;">';
                     star5Results.forEach(result => {
+                        const sinceLastStar5 = parseInt(result.sinceLastStar5, 10); // 数値に変換
                         html += `<div style="margin: 10px 0; font-size: 24px;">
-                            <span style="color: gold;">★★★★★</span> 
+                            <span style="color: gold;">★★★★★</span>
                             <span style="color: ${result.isPickup ? '#ff5722' : '#9c27b0'}; font-weight: bold;">
                                 ${result.isPickup ? t.pickup : t.standard}
                             </span>
+                             ${t.sinceLastStar5.replace('{count}', sinceLastStar5)}
                         </div>`;
                     });
                     html += '</div>';
                 }
-                
+
                 // その他の結果
                 html += '<div style="font-size: 18px;">';
                 html += `★5: ${results.filter(r => r.rarity === 5).length}体 / `;
                 html += `★4: ${results.filter(r => r.rarity === 4).length}体 / `;
                 html += `★3: ${results.filter(r => r.rarity === 3).length}体`;
                 html += '</div>';
-                
+
                 html += `<button id="close-animation" style="margin-top: 20px; padding: 10px 20px; background: white; color: #6a11cb; border: none; border-radius: 5px; cursor: pointer;">${t.closeButton}</button>`;
-                
+
                 // アニメーション表示
                 animationContentEl.innerHTML = html;
                 animationEl.classList.remove('hidden');
-                
+
                 // 閉じるボタンのイベント
                 document.getElementById('close-animation').addEventListener('click', function() {
                     animationEl.classList.add('hidden');
                 });
             }
-            
+
             // 結果一覧の更新
             function updateResultsList() {
                 // 言語に基づいたテキスト
                 const t = translations[currentLang];
-                
+
                 // 結果表示の更新
                 resultsEl.innerHTML = '';
-                
+
                 if (state.results.length === 0) {
                     const placeholder = document.createElement('div');
                     placeholder.className = 'result-item';
@@ -578,50 +603,54 @@
                     resultsEl.appendChild(placeholder);
                     return;
                 }
-                
+
                 state.results.slice(0, 100).forEach(result => {
                     const resultItem = document.createElement('div');
                     resultItem.className = `result-item star${result.rarity}`;
-                    
+
                     let resultText = t.pullCount.replace('{count}', result.pull) + ' ';
                     resultText += '★'.repeat(result.rarity) + ' ';
-                    
+
                     if (result.rarity === 5) {
-                        resultText += result.isPickup ? 
-                            `<span class="pickup">${t.pickup}</span>` : 
+                        resultText += result.isPickup ?
+                            `<span class="pickup">${t.pickup}</span>` :
                             `<span class="standard">${t.standard}</span>`;
+                        const sinceLastStar5 = parseInt(result.sinceLastStar5, 10); //数値に変換
+                        resultText += ` ${t.sinceLastStar5.replace('{count}', sinceLastStar5)}`;
+
                     }
-                    
+
                     resultItem.innerHTML = resultText;
                     resultsEl.appendChild(resultItem);
                 });
             }
-            
+
             // UI更新
             function updateUI() {
                 // 統計情報の更新
                 totalPullsEl.textContent = state.totalPulls;
                 star5CountEl.textContent = state.star5Count;
+                lastStar5El.textContent = state.lastStar5Pulls;
                 star4CountEl.textContent = state.star4Count;
                 star3CountEl.textContent = state.star3Count;
                 noSpookStreakEl.textContent = state.noSpookStreak;
-                
+
                 // 天井ゲージの更新
                 const pityPercentage = Math.min(state.pityCount / 90 * 100, 100);
                 pityFillEl.style.width = `${pityPercentage}%`;
                 updatePityText();
-                
+
                 // 色の変更
                 if (state.pityCount >= 74) {
                     pityFillEl.style.background = 'linear-gradient(135deg, #ff9800 0%, #f44336 100%)';
                 } else {
                     pityFillEl.style.background = 'linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)';
                 }
-                
+
                 // 結果一覧の更新
                 updateResultsList();
             }
-            
+
             // リセット
             function reset() {
                 state.totalPulls = 0;
@@ -631,31 +660,32 @@
                 state.star4Count = 0;
                 state.star3Count = 0;
                 state.noSpookStreak = 0;
+                state.lastStar5Pulls = 0;
                 state.results = [];
                 updateUI();
-                
+
                 // ローカルストレージから状態を削除
                 localStorage.removeItem('gachaState');
             }
-            
+
             // イベント設定
             singlePullBtn.addEventListener('click', function() {
                 pullSingle();
             });
-            
+
             tenPullBtn.addEventListener('click', function() {
                 pullTen();
             });
-            
+
             resetBtn.addEventListener('click', reset);
-            
+
             // 言語ボタンのイベント設定
             languageBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
                     changeLanguage(this.dataset.lang);
                 });
             });
-            
+
             // 初期化
             loadState();
             changeLanguage(currentLang);
