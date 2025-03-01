@@ -1,2 +1,1 @@
-# Genshin-Gatya-Simulator
-Crafted by Claude
+Hifumi Mizuhara's space
